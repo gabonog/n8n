@@ -1,4 +1,10 @@
-# n8n in queue mode (multiple workers) PostreSQL, redis and behind Traefik
+# n8n 
+
+Architecture:
+ * Queue mode (multiple workers)
+ * PostreSQL
+ * Redis
+ * Prepared to be behind Traefik as reverse proxy
 
 Here you can find 2 options:
   * Local development environment with `docker-compose-devel.yaml`
