@@ -1,0 +1,73 @@
+networks:
+  default:
+  inverseproxy_shared:
+    external: true
+
+volumes:
+  db_storage:
+  n8n_storage:
+  redis_storage:
+
+x-n8n-common: &n8n-common
+  restart: always
+  image: docker.n8n.io/n8nio/n8n
+  env_file:
+      - db/.env
+      - n8n/.env
+  links:
+    - db
+    - redis
+  volumes:
+    - n8n_storage:/home/node/.n8n
+  depends_on:
+    redis:
+      condition: service_healthy
+    db:
+      condition: service_healthy
+
+services:
+  db:
+    image: postgres:16
+    restart: always
+    env_file:
+      - db/.env
+    volumes:
+      - db_storage:/var/lib/postgresql/data
+      - ./db//init-data.sh:/docker-entrypoint-initdb.d/init-data.sh
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -h localhost -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:6-alpine
+    restart: always
+    volumes:
+      - redis_storage:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  n8n:
+    <<: *n8n-common
+    networks:
+      - default
+      - inverseproxy_shared
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=inverseproxy_shared"
+      - "traefik.http.services.${TRAEFIK_STACK_ENV}-${TRAEFIK_N8N_NAME}.loadbalancer.server.port=${TRAEFIK_N8N_PORT}"
+      - "traefik.http.routers.${TRAEFIK_STACK_ENV}-${TRAEFIK_N8N_NAME}-https.entrypoints=websecure"
+      - "traefik.http.routers.${TRAEFIK_STACK_ENV}-${TRAEFIK_N8N_NAME}-https.rule=Host(`${TRAEFIK_N8N_URL}`)"
+      - "traefik.http.routers.${TRAEFIK_STACK_ENV}-${TRAEFIK_N8N_NAME}-https.tls=true"
+      - "traefik.http.routers.${TRAEFIK_STACK_ENV}-${TRAEFIK_N8N_NAME}-https.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.${TRAEFIK_STACK_ENV}-${TRAEFIK_N8N_NAME}-https.service=${TRAEFIK_STACK_ENV}-${TRAEFIK_N8N_NAME}"
+
+  n8n-worker:
+    <<: *n8n-common
+    command: worker
+    depends_on:
+      - n8n
