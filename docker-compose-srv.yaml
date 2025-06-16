@@ -81,4 +81,4 @@ services:
       mode: replicated
       replicas: ${N8N_WORKER_REPLICAS}
     depends_on:
-      - n8n
+      - n8n-main
