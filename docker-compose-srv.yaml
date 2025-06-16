@@ -33,9 +33,9 @@ services:
       - db/.env
     volumes:
       - db_storage:/var/lib/postgresql/data
-      - ./db//init-data.sh:/docker-entrypoint-initdb.d/init-data.sh
+      - ./db/init-data.sh:/docker-entrypoint-initdb.d/init-data.sh
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -h localhost -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      test: ['CMD-SHELL', 'pg_isready -h localhost -U ${PG_HEALTHCHECK_USER} -d ${PG_HEALTHCHECK_DB}']
       interval: 5s
       timeout: 5s
       retries: 10
@@ -51,7 +51,7 @@ services:
       timeout: 5s
       retries: 10
 
-  n8n:
+  n8n-main:
     <<: *n8n-common
     networks:
       - default
@@ -65,9 +65,20 @@ services:
       - "traefik.http.routers.${TRAEFIK_STACK_ENV}-${TRAEFIK_N8N_NAME}-https.tls=true"
       - "traefik.http.routers.${TRAEFIK_STACK_ENV}-${TRAEFIK_N8N_NAME}-https.tls.certresolver=letsencrypt"
       - "traefik.http.routers.${TRAEFIK_STACK_ENV}-${TRAEFIK_N8N_NAME}-https.service=${TRAEFIK_STACK_ENV}-${TRAEFIK_N8N_NAME}"
-
+      - "traefik.http.middlewares.${TRAEFIK_STACK_ENV}-${TRAEFIK_N8N_NAME}.headers.SSLRedirect=true"
+      - "traefik.http.middlewares.${TRAEFIK_STACK_ENV}-${TRAEFIK_N8N_NAME}.headers.STSSeconds=315360000"
+      - "traefik.http.middlewares.${TRAEFIK_STACK_ENV}-${TRAEFIK_N8N_NAME}.headers.browserXSSFilter=true"
+      - "traefik.http.middlewares.${TRAEFIK_STACK_ENV}-${TRAEFIK_N8N_NAME}.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.${TRAEFIK_STACK_ENV}-${TRAEFIK_N8N_NAME}.headers.forceSTSHeader=true"
+      - "traefik.http.middlewares.${TRAEFIK_STACK_ENV}-${TRAEFIK_N8N_NAME}.headers.SSLHost=${TRAEFIK_N8N_DOMAIN}"
+      - "traefik.http.middlewares.${TRAEFIK_STACK_ENV}-${TRAEFIK_N8N_NAME}.headers.STSIncludeSubdomains=true"
+      - "traefik.http.middlewares.${TRAEFIK_STACK_ENV}-${TRAEFIK_N8N_NAME}.headers.STSPreload=true"
+      - "traefik.http.routers.${TRAEFIK_STACK_ENV}-${TRAEFIK_N8N_NAME}-https.middlewares=${TRAEFIK_STACK_ENV}-${TRAEFIK_N8N_NAME}@docker"
   n8n-worker:
     <<: *n8n-common
     command: worker
+    deploy:
+      mode: replicated
+      replicas: ${N8N_WORKER_REPLICAS}
     depends_on:
       - n8n
