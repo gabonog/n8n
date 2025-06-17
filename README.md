@@ -38,10 +38,14 @@ All the .env files follow this rules:
 
 You can add [extra features registering the Community Edition](https://docs.n8n.io/hosting/community-edition-features/) with a License Key.
 
+## Roadmap
+
+ * Multiple server configurations (more than one `docker-compose-srv.yaml`). Add one simpler without queue. Possible options: `-basic` and `-queue`
+ * Add a server configuration with separated [webhook](https://docs.n8n.io/hosting/scaling/queue-mode/#webhook-processors) containers (also replicable, `-queue-webhook`).
+
 ## References
  * [Official n8n GitHub Repo: n8n with PostgreSQL and Worker](https://github.com/n8n-io/n8n-hosting/tree/main/docker-compose/withPostgresAndWorker)
  * [Official nn Docs: Self-hosting n8n](https://docs.n8n.io/hosting/)
  * [Official n8n Docs: Docker Installation](https://docs.n8n.io/hosting/installation/docker/)
  * [Official n8n Docs: Server setups > Docker-Compose](https://docs.n8n.io/hosting/installation/server-setups/docker-compose/)
  * [Official n8n Docs: Community Edition features](https://docs.n8n.io/hosting/community-edition-features/)
- 
